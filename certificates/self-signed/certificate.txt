@@ -1,0 +1,30 @@
+Root CA
+
+openssl genrsa -des3 -out rootCA_.key 4096
+openssl rsa -in rootCA_.key -out rootCA.key
+openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3560 -out rootCA.crt
+
+Certificate Signing Request
+
+openssl genrsa -out private.key 4096
+Generate a Certificate Signing Request
+openssl req -new -sha256 \
+    -out private.csr \
+    -key private.key \
+    -config req.conf
+
+openssl req -text -noout -in private.csr
+
+Generate the certificate
+
+openssl x509 -req \
+    -sha256 \
+    -days 3650 \
+    -in private.csr \
+    -CA rootCA.crt \
+    -CAkey rootCA.key \
+    -CAcreateserial \
+    -signkey private.key \
+    -out private.crt \
+    -extensions v3_req \
+    -extfile req.conf

@@ -1,0 +1,124 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  generateName: drupal-748b74d6cd-
+  annotations:
+    k8s.v1.cni.cncf.io/network-status: |-
+      [
+        {
+          "default": true,
+          "name": "cluster-wide-default",
+          "gateway_ip": "10.4.55.1",
+          "mac": "04:50:56:00:18:05",
+          "interface": "eth0",
+          "attachment_id": "a3b6f8e0-4b6d-42c2-8653-1c2c80028067",
+          "vlan_id": 28,
+          "ip": "10.4.55.4/24"
+        }
+      ]
+    mac: '04:50:56:00:18:05'
+    openshift.io/scc: anyuid
+    vlan: '28'
+--- CUT HERE FOR BREVITY --
+
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: drupal
+  namespace: test
+  selfLink: /api/v1/namespaces/test/services/drupal
+  uid: c5b480ce-a273-43b5-8236-7e0f85b75f66
+  resourceVersion: '6510075'
+  creationTimestamp: '2020-05-16T17:25:56Z'
+  labels:
+    app: drupal
+  annotations:
+    ncp/internal_ip_for_policy: 100.64.16.3
+spec:
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 32724
+  selector:
+    app: drupal
+    tier: frontend
+  clusterIP: 172.30.155.221
+  type: LoadBalancer
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+status:
+  loadBalancer:
+    ingress:
+      - ip: 172.20.21.187
+
+
+[root@esx-01:~] summarize-dvfilter
+Fastpaths:
+agent: dvfilter-generic-vmware, refCount: 1, rev: 0x1010000, apiRev: 0x1010000, module: dvfilter-generic-fastpath
+agent: vmware-si, refCount: 1, rev: 0x1010000, apiRev: 0x1010000, module: nsxt-vsip-15945993
+agent: vmware-sfw, refCount: 40, rev: 0x1010000, apiRev: 0x1010000, module: nsxt-vsip-15945993
+agent: nsx_bridgelearningfilter, refCount: 1, rev: 0x1010000, apiRev: 0x1010000, module: nsxt-vdrb-15945993
+agent: ESXi-Firewall, refCount: 4, rev: 0x1010000, apiRev: 0x1010000, module: esxfw
+agent: dvfilter-faulter, refCount: 1, rev: 0x1010000, apiRev: 0x1010000, module: dvfilter
+
+ServiceVMs:
+serviceVM: 1, agent vmware-sfw, refCount: 19, rev: 0x4, apiRev: 0x4, capabilities: csum,tso
+serviceVM: 2, agent vmware-sfw, refCount: 19, rev: 0x4, apiRev: 0x4, capabilities: csum,tso
+
+--- CUT FOR BREVITY ---
+
+[root@esx-01:~] summarize-dvfilter | grep -A16 compute-1.eth0.28
+ port 67111383 compute-1.eth0.28
+  vNic slot 1
+   name: nic-2132301-eth2388-vmware-sfw.1
+   agentName: vmware-sfw
+   state: IOChain Attached
+   vmState: Attached
+   failurePolicy: failClosed
+   serviceVMID: 2
+   filter source: Alternate Opaque Channel
+   moduleName: nsxt-vsip-15945993
+world 3220858 vmm0:compute-2 vcUuid:'50 03 6f 41 d2 31 b1 9b-92 28 c0 5c ed 5f 24 3d'
+ port 67111288 compute-2.eth0
+  vNic slot 2
+   name: nic-3220858-eth0-vmware-sfw.2
+   agentName: vmware-sfw
+   state: IOChain Attached
+   vmState: Attached
+
+[root@esx-01:~] vsipioctl getrules -f nic-2132301-eth2388-vmware-sfw.1
+ruleset mainrs {
+  # generation number: 0
+  # realization time : 2020-05-17T11:01:56
+  # FILTER rules
+  rule 4173 at 1 inout protocol any from any to any accept;
+  rule 2 at 2 inout protocol any from any to any accept;
+  # IDP rules
+  rule 5015 at 1 inout protocol any from any to any with ids profile 7b1b28f7-a585-4e50-9b6a-3ab97d3a84e1 idp_detect;
+}
+
+ruleset mainrs_L2 {
+  # generation number: 0
+  # realization time : 2020-05-17T11:01:56
+  # FILTER rules
+  rule 1 at 1 inout ethertype any stateless from any to any accept;
+}
+
+# browser refresh http://172.20.21.187/admin/dashboard
+
+[root@esx-01:~] vsipioctl getconnections -f nic-2132301-eth2388-vmware-sfw.1
+ac967d1b00000162 Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4294) -> 10.4.55.4:http(80) 65535 EST:FINWAIT2  rtt 77599 retrans 0/0 3832 20274 22 18
+ac967d1b00000163 Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4295) -> 10.4.55.4:http(80) 65535 EST:EST  rtt 0 retrans 0/0 232 120 4 2
+ac967d1b00000164 Active tcp 0800 OUT 4173 (ids-rule : 5015)  0 0 (est,D) 10.4.55.4:Unknown(55706) -> 10.4.55.2:mysql(3306) 29200 FINWAIT2:FINWAIT2  rtt 34287 retrans 5/1 521784 76470 518 520
+
+# NMAP test
+
+[root@esx-01:~] vsipioctl getconnections -f nic-2132301-eth2388-vmware-sfw.1
+ac967d1b00000167 Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4296) -> 10.4.55.4:http(80) 65535 TIMEWAIT:TIMEWAIT  rtt 0 retrans 0/0 312 120 6 2
+ac967d1b00000168 Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4297) -> 10.4.55.4:http(80) 65535 TIMEWAIT:TIMEWAIT  rtt 0 retrans 0/0 312 120 6 2
+ac967d1b00000169 Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4298) -> 10.4.55.4:http(80) 65535 FINWAIT2:FINWAIT2  rtt 61936 retrans 0/0 868 1502 12 10
+ac967d1b0000016a Active tcp 0800 IN 4173 (ids-rule : 5015)  0 0 (est,D) 100.64.16.3:Unknown(4299) -> 10.4.55.4:http(80) 65535 FINWAIT2:FINWAIT2  rtt 73241 retrans 0/0 2578 16924 20 16
+ac967d1b0000016b Active tcp 0800 OUT 4173 (ids-rule : 5015)  0 0 (est,D) 10.4.55.4:Unknown(56780) -> 10.4.55.2:mysql(3306) 29200 FINWAIT2:FINWAIT2  rtt 35779 retrans 4/0 288554 69142 270 266

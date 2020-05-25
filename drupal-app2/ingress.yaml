@@ -1,0 +1,23 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1beta1
+metadata:
+  name: drupal-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.class: "nsx"
+    ncp/http-redirect: "false"
+    ncp/ssl-mode: "offload"
+spec:
+  tls:
+    - hosts:
+        - mysite.test.p2o.be
+      secretName: drupal-tls
+  rules:
+    - host: mysite.test.p2o.be
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: drupal
+              servicePort: 80

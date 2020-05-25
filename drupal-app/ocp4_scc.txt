@@ -1,0 +1,8 @@
+# oc get pod <your pod name> -o yaml | grep -i serviceAccountName
+    serviceAccountName: default
+
+# oc adm policy add-scc-to-user anyuid -z default
+
+# oc delete pod <your pod name>
+
+https://docs.openshift.com/container-platform/3.11/admin_guide/manage_scc.html#enable-dockerhub-images-that-require-root

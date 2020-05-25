@@ -1,0 +1,13 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: dummy
+  labels:
+    app: drupal
+    tier: dummy
+spec:
+  containers:
+    - name: dummy
+      image: ubuntu
+      command: ["/bin/bash", "-ec", "while :; do echo '.'; sleep 5 ; done"]
+  restartPolicy: Never
