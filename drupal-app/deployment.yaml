@@ -7,6 +7,22 @@ type: Opaque
 data:
   password: dGVzdA==
 # mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drupal-mysql
+  labels:
+    app: drupal
+spec:
+  ports:
+    - port: 3600
+      name: mysql
+      targetPort: 3600
+  selector:
+    app: drupal
+    tier: backend
+  type: ClusterIP
 ---   
 apiVersion: v1
 kind: PersistentVolumeClaim
