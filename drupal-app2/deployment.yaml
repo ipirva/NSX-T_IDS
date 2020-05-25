@@ -15,9 +15,9 @@ metadata:
     app: drupal
 spec:
   ports:
-    - port: 3600
+    - port: 3306
       name: mysql
-      targetPort: 3600
+      targetPort: 3306
   selector:
     app: drupal
     tier: backend
