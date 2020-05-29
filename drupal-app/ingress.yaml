@@ -18,7 +18,7 @@ spec:
     - host: mysite.com
       http:
         paths:
-          - path: /drupal/.*
+          - path: /
             backend:
               serviceName: drupal
               servicePort: 80
